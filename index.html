@@ -1,0 +1,591 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, maximum-scale=1, user-scalable=no">
+<title>IIM Shillong — Umsawli Campus</title>
+<style>
+  :root {
+    --bg: #1d1f2b;
+    --shell-a: #8f93d6;
+    --shell-b: #5c60a8;
+    --bezel: #23253a;
+    --ink: #e9ecff;
+    --muted: #a8acd6;
+    --dlg-bg: #14224f;
+    --dlg-border: #e8ecff;
+    --btn: #b43a5c;
+  }
+  * { box-sizing: border-box; -webkit-tap-highlight-color: transparent; }
+  html, body { margin: 0; min-height: 100%; background: var(--bg); color: var(--ink);
+    font-family: ui-monospace, "SF Mono", Menlo, Consolas, "Courier New", monospace; }
+  body { display: flex; justify-content: center; padding: 16px; }
+  #shell {
+    width: 100%; max-width: 920px;
+    background: linear-gradient(160deg, var(--shell-a), var(--shell-b));
+    border-radius: 22px 22px 70px 22px;
+    padding: 18px 18px 22px;
+    box-shadow: 0 10px 30px rgba(0,0,0,.5), inset 0 2px 0 rgba(255,255,255,.35);
+  }
+  #title { text-align: center; font-weight: 800; letter-spacing: .12em; font-size: 12px;
+    color: #14152a; margin: 0 0 10px; text-transform: uppercase; }
+  #bezel { background: var(--bezel); border-radius: 12px 12px 36px 12px; padding: 16px; }
+  #screen { position: relative; width: 100%; aspect-ratio: 32 / 22; background: #000;
+    border: 3px solid #0c0d18; border-radius: 4px; overflow: hidden; }
+  canvas#game { display: block; width: 100%; height: 100%; image-rendering: pixelated;
+    image-rendering: crisp-edges; image-rendering: pixelated; background: #234d2e; }
+  #dialog { position: absolute; left: 2.5%; right: 2.5%; bottom: 3%; min-height: 24%;
+    background: var(--dlg-bg); border: 3px solid var(--dlg-border); border-radius: 8px;
+    outline: 3px solid #0c1230; padding: 2.2% 3%; display: none; }
+  #dialog.open { display: block; }
+  #dlg-who { font-size: clamp(8px, 1.5vw, 12px); letter-spacing: .1em; color: #ffd86b;
+    text-transform: uppercase; font-weight: 800; margin-bottom: 4px; }
+  #dlg-text { font-size: clamp(10px, 2vw, 16px); line-height: 1.45; font-weight: 700; }
+  #dlg-more { position: absolute; right: 12px; bottom: 6px; font-size: 12px; color: #ffd86b;
+    animation: blink 0.9s steps(2) infinite; }
+  @keyframes blink { 50% { opacity: 0; } }
+  #hud { margin-top: 10px; display: flex; justify-content: space-between; gap: 10px;
+    font-size: 12px; color: var(--muted); letter-spacing: .06em; }
+  #hud b { color: var(--ink); }
+  #controls { display: flex; justify-content: space-between; align-items: center;
+    margin-top: 16px; padding: 0 10px; user-select: none; -webkit-user-select: none; }
+  #dpad { display: grid; grid-template-columns: repeat(3, 46px); grid-template-rows: repeat(3, 46px); gap: 2px; }
+  #dpad button { background: #2a2c44; border: 0; border-radius: 6px; color: #cfd2ff; font-size: 18px;
+    touch-action: none; cursor: pointer; box-shadow: 0 3px 0 #14152a; }
+  #dpad button:active, #dpad button.on { background: #444868; transform: translateY(2px); box-shadow: 0 1px 0 #14152a; }
+  #dpad .blank { background: transparent; box-shadow: none; pointer-events: none; }
+  #abtn { width: 76px; height: 76px; border-radius: 50%; border: 0; background: var(--btn); color: #fff;
+    font: 800 24px ui-monospace, monospace; box-shadow: 0 5px 0 #6c1f36; touch-action: none; cursor: pointer; }
+  #abtn:active { transform: translateY(3px); box-shadow: 0 2px 0 #6c1f36; }
+  #hint { text-align: center; font-size: 11px; color: #14152a; margin-top: 12px; opacity: .8; }
+  #legend { display: flex; flex-wrap: wrap; gap: 6px 14px; justify-content: center; margin-top: 14px;
+    font-size: 11px; color: #14152a; }
+  #legend span { display: inline-flex; align-items: center; gap: 5px; }
+  #legend i { width: 12px; height: 12px; border: 1px solid rgba(0,0,0,.45); border-radius: 2px; display: inline-block; }
+  #fatal { display: none; background: #5a1420; color: #fff; padding: 12px; margin-top: 12px; border-radius: 8px;
+    font-size: 12px; white-space: pre-wrap; }
+  #ascii { display: none; font-size: 9px; line-height: 9px; margin-top: 12px; color: #14152a; overflow: auto; }
+</style>
+</head>
+<body>
+<div id="shell">
+  <p id="title">IIM Shillong · Umsawli Campus</p>
+  <div id="bezel">
+    <div id="screen">
+      <canvas id="game" width="512" height="352"></canvas>
+      <div id="dialog" role="dialog" aria-live="polite">
+        <div id="dlg-who"></div>
+        <div id="dlg-text"></div>
+        <div id="dlg-more">▼</div>
+      </div>
+    </div>
+  </div>
+  <div id="hud"><div>📍 <b id="loc">On the road</b></div><div>Tile <span id="pos">31,31</span></div></div>
+  <div id="controls">
+    <div id="dpad">
+      <div class="blank"></div><button data-dir="up" aria-label="Up">▲</button><div class="blank"></div>
+      <button data-dir="left" aria-label="Left">◀</button><div class="blank"></div><button data-dir="right" aria-label="Right">▶</button>
+      <div class="blank"></div><button data-dir="down" aria-label="Down">▼</button><div class="blank"></div>
+    </div>
+    <button id="abtn" aria-label="Interact">A</button>
+  </div>
+  <div id="hint">Arrows / WASD to walk · Space / Enter / Z to interact with a door, sign or court</div>
+  <div id="legend"></div>
+  <div id="fatal"></div>
+  <pre id="ascii"></pre>
+</div>
+
+<script>
+'use strict';
+
+// ============================================================
+// 1. Constants + tile enum
+// ============================================================
+const COLS = 50, ROWS = 36, TILE = 16;
+const VIEW_W = 32, VIEW_H = 22;
+const SPEED = 3.2; // tiles / second
+
+const T = {
+  FOREST: 0, GRASS: 1, GRASS2: 2, PATH: 3, PATH_EDGE: 4, WATER: 5, WATER2: 6,
+  LAWN: 7, FOUNTAIN: 8, COURT_A1: 9, COURT_A2: 10, COURT_B: 11,
+  WALL: 12, ROOF: 13, DOOR: 14, SIGN: 15
+};
+const BLOCKING = new Set([T.FOREST, T.WATER, T.WATER2, T.WALL, T.ROOF, T.FOUNTAIN]);
+
+// ============================================================
+// 2. Map generation (pure, no DOM / canvas)
+// ============================================================
+// ==== MAP:BEGIN
+function hash2(x, y) {
+  const s = Math.sin(x * 127.1 + y * 311.7) * 43758.5453;
+  return s - Math.floor(s);
+}
+
+const BUILDINGS = [
+  { id: 'kalam',    label: 'Dr. Kalam Centre',                 x: 19, y: 6,  w: 7,  h: 5, door: [3, 4],
+    text: 'Dr. Kalam Centre, IIM Shillong — lecture halls just off the entrance road, named for the former President.' },
+  { id: 'admin',    label: 'New Admin Block',                  x: 22, y: 12, w: 8,  h: 6, door: [3, 5],
+    text: 'The new IIM Shillong Administration Block — the angular grey roof overlooking the campus pond.' },
+  { id: 'nect',     label: 'North East Centre for Technology', x: 36, y: 13, w: 7,  h: 5, door: [0, 4],
+    text: 'North East Centre for Technology — a research wing on the eastern hillside, still being built out.' },
+  { id: 'pavilion', label: 'Open Pavilion',                    x: 19, y: 19, w: 4,  h: 4, door: [1, 3],
+    text: 'A small octagonal pavilion halfway down the hill — a quiet spot to sit between classes.' },
+  { id: 'academic', label: 'Main Academic Block',              x: 26, y: 18, w: 11, h: 7, door: [5, 6],
+    text: 'The Main Academic Block — the largest roof on campus, fronted by a circular garden and fountain.' }
+];
+const COURTS = [
+  { id: 'courts', label: 'Basketball Courts',    x: 11, y: 4,  w: 7, h: 4, kind: 'basketball',
+    text: 'The basketball courts — a blue-and-green checkerboard where every evening game gets loud.' },
+  { id: 'tennis', label: 'Tennis & Pool Courts', x: 38, y: 26, w: 7, h: 5, kind: 'clay',
+    text: 'Tennis & pool courts on the lower terrace — clay red, with a view down the valley.' }
+];
+const GARDENS = [
+  { cx: 31, cy: 26, r: 3 },  // fronts the Main Academic Block
+  { cx: 33, cy: 29, r: 2 }
+];
+const POND = { cx: 11, cy: 14, rx: 7.5, ry: 4.5, irx: 5.5, iry: 3.2 };
+const GATE = { x: 31, y: 33, label: 'Main Gate',
+  text: 'Indian Institute of Management Shillong — Umsawli Campus. Welcome!' };
+const SPAWN = { x: 31, y: 31 };
+
+const ROAD_MAIN = [[1,3],[6,3],[10,3],[18,3],[18,11],[20,12],[20,17],[24,18],[24,26],[28,27],[31,28],[31,33]];
+const ROAD_SPUR = [[18,11],[30,11],[35,13],[35,17]];
+
+function generateMap() {
+  const g = Array.from({ length: ROWS }, () => new Array(COLS).fill(T.FOREST));
+  const inb = (x, y) => x >= 0 && y >= 0 && x < COLS && y < ROWS;
+  const set = (x, y, t) => { if (inb(x, y)) g[y][x] = t; };
+  const get = (x, y) => (inb(x, y) ? g[y][x] : T.FOREST);
+  const interactables = {};
+
+  // 2. grass clearing, speckled
+  for (let y = 2; y < 35; y++)
+    for (let x = 3; x < 48; x++)
+      g[y][x] = hash2(x * 7.3, y * 3.1) < 0.12 ? T.GRASS2 : T.GRASS;
+
+  // 3. pond
+  const P = POND;
+  for (let y = Math.floor(P.cy - P.ry); y <= Math.ceil(P.cy + P.ry); y++)
+    for (let x = Math.floor(P.cx - P.rx); x <= Math.ceil(P.cx + P.rx); x++) {
+      const outer = ((x - P.cx) / P.rx) ** 2 + ((y - P.cy) / P.ry) ** 2;
+      if (outer <= 1) {
+        const inner = ((x - P.cx) / P.irx) ** 2 + ((y - P.cy) / P.iry) ** 2;
+        set(x, y, inner <= 1 ? T.WATER2 : T.WATER);
+      }
+    }
+
+  // 4. roads (core + rim discs stepped along each segment; never over water)
+  const stampRoad = (pts) => {
+    for (let i = 0; i < pts.length - 1; i++) {
+      const [ax, ay] = pts[i], [bx, by] = pts[i + 1];
+      const len = Math.hypot(bx - ax, by - ay), steps = Math.max(1, Math.ceil(len * 4));
+      for (let s = 0; s <= steps; s++) {
+        const px = ax + (bx - ax) * s / steps, py = ay + (by - ay) * s / steps;
+        for (let y = Math.floor(py) - 3; y <= Math.ceil(py) + 3; y++)
+          for (let x = Math.floor(px) - 3; x <= Math.ceil(px) + 3; x++) {
+            if (!inb(x, y)) continue;
+            const t = g[y][x];
+            if (t === T.WATER || t === T.WATER2) continue;
+            const d = Math.hypot(x - px, y - py);
+            if (d <= 1.2) g[y][x] = T.PATH;
+            else if (d <= 2.0 && t !== T.PATH) g[y][x] = T.PATH_EDGE;
+          }
+      }
+    }
+  };
+  stampRoad(ROAD_MAIN);
+  stampRoad(ROAD_SPUR);
+
+  // 5. buildings
+  for (const b of BUILDINGS) {
+    for (let y = b.y; y < b.y + b.h; y++)
+      for (let x = b.x; x < b.x + b.w; x++) {
+        const edge = x === b.x || y === b.y || x === b.x + b.w - 1 || y === b.y + b.h - 1;
+        set(x, y, edge ? T.WALL : T.ROOF);
+      }
+    const dx = b.x + b.door[0], dy = b.y + b.door[1];
+    set(dx, dy, T.DOOR);
+    interactables[dx + ',' + dy] = { who: b.label, text: b.text };
+  }
+
+  // 6. courts
+  for (const c of COURTS) {
+    for (let y = c.y; y < c.y + c.h; y++)
+      for (let x = c.x; x < c.x + c.w; x++) {
+        if (c.kind === 'basketball')
+          set(x, y, (((x - c.x) >> 1) + ((y - c.y) >> 1)) % 2 === 0 ? T.COURT_A1 : T.COURT_A2);
+        else set(x, y, T.COURT_B);
+        interactables[x + ',' + y] = { who: c.label, text: c.text };
+      }
+  }
+
+  // 7. gardens (only reclaim grass / forest, then place the fountain)
+  for (const gd of GARDENS) {
+    for (let y = gd.cy - gd.r; y <= gd.cy + gd.r; y++)
+      for (let x = gd.cx - gd.r; x <= gd.cx + gd.r; x++) {
+        const t = get(x, y);
+        if (Math.hypot(x - gd.cx, y - gd.cy) <= gd.r + 0.01 &&
+            (t === T.GRASS || t === T.GRASS2 || t === T.FOREST)) set(x, y, T.LAWN);
+      }
+    set(gd.cx, gd.cy, T.FOUNTAIN);
+  }
+
+  // 8. gate sign
+  set(GATE.x, GATE.y, T.SIGN);
+  interactables[GATE.x + ',' + GATE.y] = { who: GATE.label, text: GATE.text };
+
+  return { grid: g, interactables };
+}
+// ==== MAP:END
+
+// ============================================================
+// 3. Palette + drawTile()
+// ============================================================
+const PAL = [];
+PAL[T.FOREST]    = ['#234d2e', '#1b3c24'];
+PAL[T.GRASS]     = ['#6cb24a', '#64a844'];
+PAL[T.GRASS2]    = ['#77bb52', '#6cb24a'];
+PAL[T.PATH]      = ['#cdbd96', '#c3b288'];
+PAL[T.PATH_EDGE] = ['#b7a67c', '#ad9c70'];
+PAL[T.WATER]     = ['#3f8fc7', '#3680b6'];
+PAL[T.WATER2]    = ['#4fa3da', '#3f8fc7'];
+PAL[T.LAWN]      = ['#8fcf63', '#86c759'];
+PAL[T.FOUNTAIN]  = ['#bcd9ea', '#9bc3da'];
+PAL[T.COURT_A1]  = ['#3a74b0', '#3a74b0'];
+PAL[T.COURT_A2]  = ['#4f9d5c', '#4f9d5c'];
+PAL[T.COURT_B]   = ['#b2694a', '#b2694a'];
+PAL[T.WALL]      = ['#a79a7e', '#9c8f74'];
+PAL[T.ROOF]      = ['#3c4049', '#34373f'];
+PAL[T.DOOR]      = ['#5b3a29', '#4e3121'];
+PAL[T.SIGN]      = ['#5b3a29', '#e7dcc0'];
+for (let t = 0; t < Object.keys(T).length; t++)
+  if (!PAL[t]) throw new Error('Palette missing tile type ' + t);
+
+const cv = document.getElementById('game');
+const ctx = cv.getContext('2d');
+ctx.imageSmoothingEnabled = false;
+
+let world = null; // { grid, interactables }
+let now = 0;
+
+function tileAt(x, y) {
+  if (x < 0 || y < 0 || x >= COLS || y >= ROWS) return T.FOREST;
+  return world.grid[y][x];
+}
+const colorOf = (t, x, y) => PAL[t][hash2(x, y) < 0.5 ? 0 : 1];
+
+function drawTile(t, x, y, px, py) {
+  const h = hash2(x, y);
+  const base = colorOf(t, x, y);
+  const rect = (c, rx, ry, rw, rh) => { ctx.fillStyle = c; ctx.fillRect(px + rx, py + ry, rw, rh); };
+
+  switch (t) {
+    case T.FOREST: {
+      rect(base, 0, 0, TILE, TILE);
+      const ox = (h * 4) | 0, oy = (hash2(y, x) * 4) | 0;
+      ctx.fillStyle = '#2d6a3d';
+      ctx.beginPath(); ctx.arc(px + 8 + ox - 2, py + 8 + oy - 2, 7, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = '#3a7d49';
+      ctx.beginPath(); ctx.arc(px + 6 + ox - 2, py + 6 + oy - 2, 3, 0, 6.2832); ctx.fill();
+      break;
+    }
+    case T.GRASS: case T.GRASS2: case T.LAWN:
+      rect(base, 0, 0, TILE, TILE);
+      if (t === T.LAWN) {
+        ctx.strokeStyle = 'rgba(190,240,150,.35)'; ctx.lineWidth = 1;
+        ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
+      }
+      if (h > 0.55) { rect('#58994a', ((h * 97) | 0) % 12 + 1, ((h * 53) | 0) % 12 + 1, 1, 2); }
+      if (h < 0.2)  { rect('#85cc5e', ((h * 211) | 0) % 12 + 1, ((h * 89) | 0) % 12 + 1, 2, 1); }
+      break;
+    case T.PATH: case T.PATH_EDGE:
+      rect(base, 0, 0, TILE, TILE);
+      if (h > 0.6) rect('rgba(120,100,60,.35)', ((h * 71) | 0) % 13 + 1, ((h * 37) | 0) % 13 + 1, 2, 1);
+      break;
+    case T.WATER: case T.WATER2: {
+      rect(base, 0, 0, TILE, TILE);
+      const off = ((now * 6 + h * 16) % 16);
+      ctx.fillStyle = 'rgba(255,255,255,.35)';
+      const wy = py + 4 + ((h * 8) | 0);
+      ctx.fillRect(px + off, wy, 5, 1);
+      ctx.fillRect(px + off - 16, wy, 5, 1);
+      break;
+    }
+    case T.FOUNTAIN:
+      rect(PAL[T.LAWN][0], 0, 0, TILE, TILE);
+      ctx.fillStyle = '#7d8c97';
+      ctx.beginPath(); ctx.arc(px + 8, py + 8, 7.5, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = '#bcd9ea';
+      ctx.beginPath(); ctx.arc(px + 8, py + 8, 6, 0, 6.2832); ctx.fill();
+      ctx.fillStyle = '#e8f6ff';
+      ctx.beginPath(); ctx.arc(px + 8, py + 8 - Math.sin(now * 5) * 0.8, 2.2, 0, 6.2832); ctx.fill();
+      break;
+    case T.COURT_A1: case T.COURT_A2:
+      rect(base, 0, 0, TILE, TILE);
+      rect('rgba(255,255,255,.18)', 0, 0, TILE, 1);
+      rect('rgba(255,255,255,.18)', 0, 0, 1, TILE);
+      break;
+    case T.COURT_B:
+      rect(base, 0, 0, TILE, TILE);
+      ctx.strokeStyle = 'rgba(255,255,255,.85)'; ctx.lineWidth = 1;
+      ctx.strokeRect(px + 0.5, py + 0.5, TILE - 1, TILE - 1);
+      break;
+    case T.WALL:
+      rect(base, 0, 0, TILE, TILE);
+      rect('rgba(0,0,0,.12)', 0, 7, TILE, 1);
+      rect('rgba(0,0,0,.12)', ((x + y) & 1) ? 4 : 10, 0, 1, 7);
+      rect('rgba(0,0,0,.12)', ((x + y) & 1) ? 10 : 4, 8, 1, 8);
+      break;
+    case T.ROOF: {
+      rect(base, 0, 0, TILE, TILE);
+      if (tileAt(x, y - 1) === T.WALL) rect('#5a606c', 0, 0, TILE, 3);   // highlight strip
+      if (tileAt(x, y + 1) === T.WALL) rect('#23252b', 0, TILE - 3, TILE, 3); // shadow strip
+      rect('rgba(255,255,255,.05)', 0, 8, TILE, 1);
+      break;
+    }
+    case T.DOOR:
+      rect(PAL[T.WALL][0], 0, 0, TILE, TILE);
+      rect('#3a2418', 2, 1, 12, 15);
+      rect(base, 3, 2, 10, 14);
+      rect('#2c1a11', 7, 2, 1, 14);
+      rect('#e0b54a', 5, 9, 1, 2); rect('#e0b54a', 10, 9, 1, 2);
+      break;
+    case T.SIGN:
+      rect(PAL[T.PATH][0], 0, 0, TILE, TILE);
+      rect('#5b3a29', 7, 6, 2, 10);
+      rect('#3a2418', 1, 1, 14, 8);
+      rect('#e7dcc0', 2, 2, 12, 6);
+      rect('#5b3a29', 4, 4, 8, 1); rect('#5b3a29', 4, 6, 6, 1);
+      break;
+    default:
+      throw new Error('drawTile: unknown tile type ' + t);
+  }
+}
+
+// ============================================================
+// 4. Player state + input
+// ============================================================
+const player = { x: SPAWN.x, y: SPAWN.y, fx: SPAWN.x, fy: SPAWN.y, dir: 'down',
+                 moving: false, fromX: 0, fromY: 0, toX: 0, toY: 0, prog: 0, step: 0 };
+const DIRS = { up: [0, -1], down: [0, 1], left: [-1, 0], right: [1, 0] };
+const held = []; // stack of directions, most recent last
+const press = (d) => { if (!held.includes(d)) held.push(d); };
+const release = (d) => { const i = held.indexOf(d); if (i >= 0) held.splice(i, 1); };
+
+const KEYDIR = { ArrowUp: 'up', ArrowDown: 'down', ArrowLeft: 'left', ArrowRight: 'right',
+                 w: 'up', s: 'down', a: 'left', d: 'right', W: 'up', S: 'down', A: 'left', D: 'right' };
+const ACTION_KEYS = new Set([' ', 'Enter', 'z', 'Z']);
+
+window.addEventListener('keydown', (e) => {
+  if (KEYDIR[e.key]) { e.preventDefault(); press(KEYDIR[e.key]); }
+  else if (ACTION_KEYS.has(e.key)) { e.preventDefault(); if (!e.repeat) interact(); }
+});
+window.addEventListener('keyup', (e) => { if (KEYDIR[e.key]) release(KEYDIR[e.key]); });
+window.addEventListener('blur', () => { held.length = 0; });
+
+document.querySelectorAll('#dpad button[data-dir]').forEach((b) => {
+  const d = b.dataset.dir;
+  const down = (e) => { e.preventDefault(); b.classList.add('on'); press(d); };
+  const up = (e) => { e.preventDefault(); b.classList.remove('on'); release(d); };
+  b.addEventListener('pointerdown', down);
+  ['pointerup', 'pointercancel', 'pointerleave'].forEach((ev) => b.addEventListener(ev, up));
+});
+document.getElementById('abtn').addEventListener('pointerdown', (e) => { e.preventDefault(); interact(); });
+
+// ---- dialog
+const dlg = document.getElementById('dialog');
+const dlgWho = document.getElementById('dlg-who');
+const dlgText = document.getElementById('dlg-text');
+let dlgOpen = false, typeTimer = null, fullText = '';
+
+function showDialog(who, text) {
+  dlgOpen = true;
+  dlg.classList.add('open');
+  dlgWho.textContent = who;
+  fullText = text;
+  dlgText.textContent = '';
+  clearInterval(typeTimer);
+  let i = 0;
+  typeTimer = setInterval(() => {
+    i += 2;
+    dlgText.textContent = fullText.slice(0, i);
+    if (i >= fullText.length) clearInterval(typeTimer);
+  }, 22);
+}
+function closeDialog() {
+  dlgOpen = false; dlg.classList.remove('open'); clearInterval(typeTimer);
+}
+
+function interact() {
+  if (!world) return;
+  if (dlgOpen) {
+    // first press finishes the typewriter, next press closes the box
+    if (dlgText.textContent.length < fullText.length) {
+      clearInterval(typeTimer); dlgText.textContent = fullText;
+    } else closeDialog();
+    return;
+  }
+  if (player.moving) return;
+  const [dx, dy] = DIRS[player.dir];
+  const hit = world.interactables[(player.x + dx) + ',' + (player.y + dy)] ||
+              world.interactables[player.x + ',' + player.y];
+  showDialog(hit ? hit.who : 'Guide', hit ? hit.text : 'Nothing to see here. Try walking up to a door, a court or the gate sign.');
+}
+
+// ============================================================
+// 5. update(dt)
+// ============================================================
+function walkable(x, y) {
+  return x >= 0 && y >= 0 && x < COLS && y < ROWS && !BLOCKING.has(world.grid[y][x]);
+}
+
+function update(dt) {
+  if (player.moving) {
+    player.prog += SPEED * dt;
+    player.step += dt * 12;
+    if (player.prog >= 1) {
+      player.x = player.toX; player.y = player.toY;
+      player.fx = player.x; player.fy = player.y;
+      player.moving = false; player.prog = 0;
+    } else {
+      player.fx = player.fromX + (player.toX - player.fromX) * player.prog;
+      player.fy = player.fromY + (player.toY - player.fromY) * player.prog;
+    }
+  }
+  if (!player.moving && !dlgOpen && held.length) {
+    const d = held[held.length - 1];
+    const [dx, dy] = DIRS[d];
+    player.dir = d;
+    if (walkable(player.x + dx, player.y + dy)) {
+      player.moving = true; player.prog = 0;
+      player.fromX = player.x; player.fromY = player.y;
+      player.toX = player.x + dx; player.toY = player.y + dy;
+    }
+  }
+}
+
+// ============================================================
+// 6. render()
+// ============================================================
+function drawPlayer(px, py) {
+  const walking = player.moving;
+  const swing = walking ? Math.round(Math.sin(player.step * 1.6) * 2) : 0;
+  const bob = walking ? Math.abs(Math.sin(player.step * 1.6)) * -1 : 0;
+  const R = (c, x, y, w, h) => { ctx.fillStyle = c; ctx.fillRect(Math.round(px + x), Math.round(py + y + bob), w, h); };
+  ctx.fillStyle = 'rgba(0,0,0,.25)';
+  ctx.beginPath(); ctx.ellipse(px + 8, py + 14.5, 5, 2, 0, 0, 6.2832); ctx.fill();
+  // legs
+  R('#2a3550', 4 + (player.dir === 'left' || player.dir === 'right' ? swing : -swing), 11, 3, 4);
+  R('#2a3550', 9 + (player.dir === 'left' || player.dir === 'right' ? -swing : swing), 11, 3, 4);
+  // body
+  R('#d84a4a', 4, 6, 8, 6);
+  R('#f2f2f2', 7, 6, 2, 6);
+  // head
+  R('#f1c9a0', 4, 1, 8, 6);
+  // cap
+  R('#d84a4a', 3, 0, 10, 3);
+  if (player.dir === 'down') {
+    R('#222', 5, 4, 1, 2); R('#222', 10, 4, 1, 2);
+    R('#d84a4a', 4, 3, 8, 1);
+  } else if (player.dir === 'up') {
+    R('#d84a4a', 3, 0, 10, 5);
+  } else if (player.dir === 'left') {
+    R('#222', 4, 4, 1, 2); R('#d84a4a', 2, 2, 3, 2);
+  } else {
+    R('#222', 11, 4, 1, 2); R('#d84a4a', 11, 2, 3, 2);
+  }
+}
+
+function plaque(text, cx, cy) {
+  ctx.font = 'bold 7px ui-monospace, Menlo, Consolas, monospace';
+  ctx.textBaseline = 'middle'; ctx.textAlign = 'center';
+  const w = Math.ceil(ctx.measureText(text).width) + 6;
+  ctx.fillStyle = 'rgba(15,20,48,.82)';
+  ctx.fillRect(Math.round(cx - w / 2), Math.round(cy - 5), w, 10);
+  ctx.strokeStyle = '#e8ecff'; ctx.lineWidth = 1;
+  ctx.strokeRect(Math.round(cx - w / 2) + 0.5, Math.round(cy - 5) + 0.5, w - 1, 9);
+  ctx.fillStyle = '#fff';
+  ctx.fillText(text, Math.round(cx), Math.round(cy) + 0.5);
+}
+
+function render() {
+  const camX = Math.min(Math.max(player.fx + 0.5 - VIEW_W / 2, 0), COLS - VIEW_W);
+  const camY = Math.min(Math.max(player.fy + 0.5 - VIEW_H / 2, 0), ROWS - VIEW_H);
+  const cpx = Math.round(camX * TILE), cpy = Math.round(camY * TILE);
+
+  ctx.fillStyle = '#234d2e';
+  ctx.fillRect(0, 0, cv.width, cv.height);
+
+  const x0 = Math.max(0, Math.floor(camX) - 1), y0 = Math.max(0, Math.floor(camY) - 1);
+  const x1 = Math.min(COLS - 1, Math.ceil(camX) + VIEW_W), y1 = Math.min(ROWS - 1, Math.ceil(camY) + VIEW_H);
+  for (let y = y0; y <= y1; y++)
+    for (let x = x0; x <= x1; x++)
+      drawTile(world.grid[y][x], x, y, x * TILE - cpx, y * TILE - cpy);
+
+  // labels floating above buildings / courts
+  for (const b of BUILDINGS) plaque(b.label, (b.x + b.w / 2) * TILE - cpx, b.y * TILE - cpy - 6);
+  for (const c of COURTS) plaque(c.label, (c.x + c.w / 2) * TILE - cpx, c.y * TILE - cpy - 6);
+  plaque(GATE.label, GATE.x * TILE + 8 - cpx, GATE.y * TILE - cpy - 6);
+
+  drawPlayer(Math.round(player.fx * TILE - cpx), Math.round(player.fy * TILE - cpy) - 2);
+}
+
+// ---- HUD
+const locEl = document.getElementById('loc'), posEl = document.getElementById('pos');
+function locationName() {
+  const t = tileAt(player.x, player.y);
+  const hit = world.interactables[player.x + ',' + player.y];
+  if (t === T.DOOR || t === T.SIGN || t === T.COURT_A1 || t === T.COURT_A2 || t === T.COURT_B) return hit ? hit.who : 'Campus';
+  if (t === T.PATH || t === T.PATH_EDGE) return 'On the road';
+  if (t === T.LAWN) return 'Garden lawn';
+  return 'Campus grounds';
+}
+
+// ============================================================
+// 7. Loop (started unconditionally)
+// ============================================================
+function showFatal(err) {
+  console.error(err);
+  const f = document.getElementById('fatal');
+  f.style.display = 'block';
+  f.textContent = 'Map failed to build:\n' + (err && err.stack || err);
+}
+
+function buildLegend() {
+  const items = [['Path', PAL[T.PATH][0]], ['Grass', PAL[T.GRASS][0]], ['Forest', PAL[T.FOREST][0]],
+    ['Pond', PAL[T.WATER][0]], ['Garden lawn', PAL[T.LAWN][0]], ['Building roof', PAL[T.ROOF][0]],
+    ['Courts', PAL[T.COURT_A1][0]]];
+  document.getElementById('legend').innerHTML =
+    items.map(([n, c]) => `<span><i style="background:${c}"></i>${n}</span>`).join('');
+}
+
+function asciiMap(w) {
+  const ch = '#.,=~oO*@ab_WRDS'; // indexed by tile type
+  return w.grid.map((r) => r.map((t) => ch[t]).join('')).join('\n');
+}
+
+let last = performance.now();
+function frame(ts) {
+  const dt = Math.min(0.05, (ts - last) / 1000); last = ts; now = ts / 1000;
+  try {
+    update(dt);
+    render();
+    locEl.textContent = locationName();
+    posEl.textContent = player.x + ',' + player.y;
+  } catch (err) { showFatal(err); return; }
+  requestAnimationFrame(frame);
+}
+
+try {
+  buildLegend();
+  world = generateMap();
+  if (!walkable(SPAWN.x, SPAWN.y)) throw new Error('Spawn tile is blocking');
+  if (location.search.includes('ascii')) {
+    const pre = document.getElementById('ascii'); pre.style.display = 'block'; pre.textContent = asciiMap(world);
+  }
+  window.__game = { world, player, T, BLOCKING, press, release, interact, COLS, ROWS };
+} catch (err) { showFatal(err); }
+requestAnimationFrame(frame);
+</script>
+</body>
+</html>
