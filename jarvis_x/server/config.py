@@ -11,7 +11,7 @@ PROFILE = ROOT / "profile"
 DATA = Path(os.environ.get("JARVIS_DATA") or ROOT / "data")
 
 HOST = "127.0.0.1"
-PORT = 8000
+PORT = int(os.environ.get("JARVIS_PORT") or 8000)
 
 
 def set_data_dir(path) -> None:
