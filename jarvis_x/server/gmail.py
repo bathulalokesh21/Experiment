@@ -59,10 +59,11 @@ def service():
 def html_to_text(raw: str) -> str:
     raw = re.sub(r"(?is)<(script|style|head)[^>]*>.*?</\1>", " ", raw)
     raw = re.sub(r"(?i)<br\s*/?>|</p>|</div>|</tr>|</li>|</h\d>", "\n", raw)
-    raw = re.sub(r"(?s)<[^>]+>", " ", raw)
+    raw = re.sub(r"(?i)</t[dh]>", " ", raw)
+    raw = re.sub(r"(?s)<[^>]+>", "", raw)          # inline tags vanish without leaving a gap before punctuation
     raw = html.unescape(raw)
-    raw = re.sub(r"[ \t\xa0]+", " ", raw)
-    return re.sub(r"\n\s*\n\s*", "\n\n", raw).strip()
+    lines = [re.sub(r"[ \t\xa0]+", " ", ln).strip() for ln in raw.splitlines()]
+    return re.sub(r"\n{3,}", "\n\n", "\n".join(lines)).strip()
 
 
 def _header(msg: dict, name: str) -> str:

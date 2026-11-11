@@ -147,7 +147,8 @@ def make_gmail():
             def run():
                 raw = base64.urlsafe_b64decode(body["message"]["raw"])
                 msg = email.message_from_bytes(raw)
-                did = f"d{len(fake.drafts) + 1}"
+                fake.counter = getattr(fake, "counter", 0) + 1
+                did = f"d{fake.counter}"
                 fake.drafts[did] = {"to": msg["To"], "subject": msg["Subject"], "thread": body["message"].get("threadId"),
                                     "in_reply_to": msg["In-Reply-To"], "body": msg.get_payload(decode=True).decode()}
                 return {"id": did}
