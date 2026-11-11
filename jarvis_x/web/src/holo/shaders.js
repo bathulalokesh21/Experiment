@@ -33,7 +33,7 @@ varying vec3 vColor; varying float vAlpha; varying float vType; varying float vS
 
 // ---- JARVIS: the golden mind ------------------------------------------------------------
 vec3 formJ(out float glow, out float size) {
-  vec3 p = aJ;
+  vec3 p = aJ * 1.32;
   float r = length(p);
   p *= 1.0 + uBreath * 0.045 + uState.x * uMic * 0.10;
   p += swirl(p * 1.3 + aRand.xyz * 4.0, uTime * 0.12) * (0.035 + 0.03 * uHumor);
@@ -41,14 +41,14 @@ vec3 formJ(out float glow, out float size) {
   float sweep = fract(uTime * (0.35 + 0.5 * uThinkAge) + aRand.x * 0.15 - dot(normalize(p + 0.001), vec3(0.3, 0.8, 0.5)) * 0.5);
   float fire = pow(max(0.0, 1.0 - abs(sweep - 0.5) * 5.0), 3.0) * uState.y;
   // speaking: a wave of light rolls outward from the core with every syllable
-  float front = fract(uTime * 0.9 + uOnset * 0.2) * 1.25;
-  float wave = smoothstep(0.16, 0.0, abs(r - front)) * (0.35 + uLevel * 1.6) * uState.z;
+  float front = fract(uTime * 0.9 + uOnset * 0.2) * 1.6;
+  float wave = smoothstep(0.16, 0.0, abs(r - front)) * (0.25 + uLevel * 0.8) * uState.z;
   p += normalize(p + 0.0001) * (wave * 0.07 + uLevel * 0.05 * uState.z + uOnset * 0.05 * aRand.y);
   // idle micro-events: a rare spark
   float spark = step(0.9965, fract(aRand.z + floor(uTime * 1.3) * 0.618)) * (1.0 - max(uState.y, uState.z));
   p.xz = rot(uTime * 0.11 + uState.y * uTime * 0.05) * p.xz;
-  glow = 0.42 + fire * 1.5 + wave * 1.3 + spark * 2.5 + uState.w * 0.6 + aKind.x * 0.3;
-  size = mix(1.0, 2.1, aKind.x) * (1.0 + fire * 0.8 + wave * 0.9 + spark * 2.0);
+  glow = 0.13 + aKind.x * 0.55 + fire * 1.3 + wave * 0.7 + spark * 2.5 + uState.w * 0.35;
+  size = mix(0.62, 1.9, aKind.x) * (1.0 + fire * 0.8 + wave * 0.9 + spark * 2.0);
   return p;
 }
 
@@ -60,21 +60,21 @@ vec3 formF(out float glow, out float size) {
     vec3 n = normalize(aF);
     float boil = noise(n * 3.0 + uTime * 0.6) - 0.5;
     p = n * (0.36 + boil * 0.07 + uLevel * 0.10 * uState.z + uBreath * 0.02 + uState.x * uMic * 0.06);
-    glow = 0.75 + uLevel * 1.2 * uState.z + boil * 0.5; size = 1.25;
+    glow = 0.2 + uLevel * 0.35 * uState.z + boil * 0.3; size = 0.9;
   } else if (aKind.y < 1.5) {     // charged particles riding dipole field lines
-    float L = aF.x * (1.0 + band * 0.55 * uState.z + uBreath * 0.04);
+    float L = aF.x * (1.0 + band * 0.28 * uState.z + uBreath * 0.04);
     float phi = aF.y + uState.y * sin(aF.z * 6.283 + uTime * 1.6) * 0.9 + uTime * 0.05;   // field twists while thinking
     float theta = fract(aF.z + uTime * (0.045 + 0.05 * aRand.x + 0.12 * uState.y) * (aRand.y > 0.5 ? 1.0 : -1.0)) * PI;
     float rr = L * sin(theta) * sin(theta);
     p = vec3(rr * sin(theta) * cos(phi), rr * cos(theta), rr * sin(theta) * sin(phi));
     p += (aRand.xyz - 0.5) * 0.025;
-    glow = 0.45 + band * 1.3 * uState.z + uState.x * uMic; size = 0.9 + band * 0.9;
+    glow = 0.24 + band * 0.55 * uState.z + uState.x * uMic * 0.5; size = 0.7 + band * 0.6;
   } else {                        // coronal flares: thrown out on strong syllables
     vec3 n = normalize(aF);
     float life = fract(aRand.x + uTime * (0.22 + aRand.y * 0.3));
-    float reach = 0.4 + life * (0.35 + 1.5 * uOnset * uState.z + 0.25 * uState.z * uLevel);
+    float reach = 0.4 + life * (0.35 + 1.1 * uOnset * uState.z + 0.2 * uState.z * uLevel);
     p = n * reach + swirl(n * 2.0, uTime * 0.3) * 0.12 * life;
-    glow = (1.0 - life) * (0.25 + 1.8 * uOnset * uState.z + 0.3 * uState.w); size = 0.8 + (1.0 - life);
+    glow = (1.0 - life) * (0.16 + 1.0 * uOnset * uState.z + 0.3 * uState.w); size = 0.7 + (1.0 - life) * 0.8;
   }
   p.xz = rot(uTime * 0.07) * p.xz;
   p.xy = rot(0.32) * p.xy;        // tilted magnetic axis
@@ -92,7 +92,7 @@ vec3 formR(out float glow, out float size, out float type) {
     p.xy = rot(uTime * 0.07 * dir) * p.xy;
     float burst = (uLevel * 0.30 + uOnset * 0.35) * uState.z * step(0.55, aRand.x);   // vertices burst with her voice
     p *= 1.0 + burst * (0.4 + aRand.y) + uBreath * 0.03 + uState.x * uMic * 0.08;
-    glow = 0.55 + burst * 2.0 + uState.y * 0.3; size = 1.0 + burst * 2.0;
+    glow = 0.42 + burst * 1.6 + uState.y * 0.3; size = 0.85 + burst * 1.6;
   } else if (aKind.z < 1.5) {     // glyph helices: runes climb while she reads / thinks
     float climb = 0.035 + 0.22 * uState.y + 0.05 * uState.z;
     float h = fract(aR.y + uTime * climb) * 2.2 - 1.1;
@@ -107,7 +107,7 @@ vec3 formR(out float glow, out float size, out float type) {
     float rad = aR.z * (0.75 + 0.5 * fall) + (uLevel * 0.35 + uOnset * 0.5) * uState.z * aRand.z;
     p = vec3(cos(ang) * rad, h, sin(ang) * rad);
     p += swirl(p + aRand.xyz, uTime * 0.2) * 0.12;
-    glow = 0.55 + 0.4 * uState.z * uLevel; size = 2.4 + aRand.x * 1.6; type = 2.0;
+    glow = 0.8 + 0.3 * uState.z * uLevel; size = 3.2 + aRand.x * 2.0; type = 2.0;
   }
   return p;
 }
@@ -167,12 +167,12 @@ void main() {
     float ang = vSeed * 6.283 + uTime * (0.6 + vSeed);
     float cs = cos(ang), sn = sin(ang);
     vec2 q = vec2(c.x * cs - c.y * sn, c.x * sn + c.y * cs) * 2.0;
-    q.x *= 1.0 + 0.9 * sin(uTime * 1.3 + vSeed * 30.0);   // tumbling: the petal turns edge-on
-    float petal = length(vec2(q.x * 1.55, q.y - 0.12 * (1.0 - q.y)));
-    float notch = smoothstep(0.0, 0.12, length(q - vec2(0.0, 0.62)) - 0.13);
-    a = smoothstep(0.62, 0.42, petal) * notch;
-    col = mix(col, vec3(1.0, 0.72, 0.86), 0.65) * (0.75 + 0.5 * q.y);
-    a *= 0.75;
+    q.x *= 1.25 + 0.55 * sin(uTime * 1.3 + vSeed * 30.0);   // tumbling: the petal turns part edge-on
+    float width = 0.52 * sqrt(clamp(0.9 - q.y, 0.0, 1.8) / 1.8) * smoothstep(-0.95, -0.2, q.y);   // teardrop: pointed base, round top
+    float notch = smoothstep(0.02, 0.16, length(q - vec2(0.0, 0.95)));
+    a = smoothstep(width, width * 0.55, abs(q.x)) * step(-0.95, q.y) * step(q.y, 0.9) * notch;
+    col = mix(vec3(1.0, 0.42, 0.68), vec3(1.0, 0.72, 0.86), clamp(q.y * 0.5 + 0.5, 0.0, 1.0));
+    a *= 0.5;
   } else if (vType > 0.5) {     // rune from the glyph atlas
     float idx = floor(vSeed * 16.0);
     vec2 cell = vec2(mod(idx, 4.0), floor(idx / 4.0));
@@ -192,14 +192,14 @@ attribute vec3 aRand3; attribute float aAlong;
 uniform float uScale; uniform vec3 uColor, uThink;
 varying vec3 vColor; varying float vAlpha;
 void main() {
-  vec3 p = position;
+  vec3 p = position * 1.32;
   p *= 1.0 + uBreath * 0.045 + uState.x * uMic * 0.10;
   float r = length(p);
   p += normalize(p + 0.0001) * (uLevel * 0.05 * uState.z);
   p.xz = rot(uTime * 0.11 + uState.y * uTime * 0.05) * p.xz;
   p = userSpin(p * (1.0 + uBeat * 0.06));
   float pulse = pow(max(0.0, 1.0 - abs(fract(uTime * (0.5 + aRand3.x) + aRand3.y) - aAlong) * 4.0), 2.0);
-  float front = fract(uTime * 0.9) * 1.25;
+  float front = fract(uTime * 0.9) * 1.6;
   float wave = smoothstep(0.2, 0.0, abs(r - front)) * uLevel * uState.z;
   vAlpha = (0.10 + pulse * (0.25 + 0.9 * uState.y) + wave * 1.6 + uState.w * 0.2) * uMorph.x * uMorph.x * smoothstep(0.5, 1.0, uAssemble);
   vColor = mix(uColor, uThink, uState.y * 0.5);
@@ -217,7 +217,7 @@ uniform float uScale; uniform vec3 uColor, uColor2;
 varying vec3 vColor; varying float vAlpha;
 void main() {
   float band = mix(uBands.x, uBands.z, aBand);
-  float L = aParam.x * (1.0 + band * 0.55 * uState.z + uBreath * 0.04);
+  float L = aParam.x * (1.0 + band * 0.28 * uState.z + uBreath * 0.04);
   float phi = aParam.y + uState.y * sin(aParam.z * 6.283 + uTime * 1.6) * 0.9 + uTime * 0.05;
   float theta = aParam.z * PI;
   float rr = L * sin(theta) * sin(theta);
@@ -225,7 +225,7 @@ void main() {
   p.xz = rot(uTime * 0.07) * p.xz; p.xy = rot(0.32) * p.xy;
   p = userSpin(p * (1.0 + uBeat * 0.06));
   float run = pow(max(0.0, sin(aParam.z * 14.0 - uTime * 2.5 + aParam.y * 3.0)), 6.0);
-  vAlpha = (0.10 + band * 0.9 * uState.z + run * 0.25 + uState.x * uMic * 0.5 + uState.y * 0.15) * uMorph.y * uMorph.y * smoothstep(0.5, 1.0, uAssemble);
+  vAlpha = (0.09 + band * 0.32 * uState.z + run * 0.22 + uState.x * uMic * 0.5 + uState.y * 0.15) * uMorph.y * uMorph.y * smoothstep(0.5, 1.0, uAssemble);
   vColor = mix(uColor, uColor2, aBand);
   gl_Position = projectionMatrix * modelViewMatrix * vec4(p * uScale, 1.0);
 }`;
@@ -245,7 +245,7 @@ uniform vec3 uColor, uColor2; varying vec3 vN; varying vec3 vP;
 void main() {
   float rim = pow(1.0 - abs(vN.z), 1.6);
   float cells = noise(vP * 5.0 + uTime * 0.8) * noise(vP * 11.0 - uTime * 0.5);
-  vec3 col = mix(uColor2, uColor, cells * 2.2) * (0.35 + cells * 1.6 + rim * 0.9 + uLevel * uState.z * 0.8);
+  vec3 col = mix(uColor2, uColor, cells * 2.2) * (0.3 + cells * 1.4 + rim * 0.7 + uLevel * uState.z * 0.35);
   float a = (0.55 + rim * 0.4) * uMorph.y * uMorph.y * smoothstep(0.6, 1.0, uAssemble);
   gl_FragColor = vec4(col * a, a);
 }`;

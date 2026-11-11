@@ -83,6 +83,7 @@ async def lifespan(app: FastAPI):
     system.clear_screens()
     if config.fake_mode():
         voice.set_synth(voice.fake_synth)
+        widgets.set_fetch(widgets.fake_fetch)
     loops = [reminder_loop(), proactive_loop(), crew.brain().prewarm()]
     if not config.fake_mode():
         loops.append(widgets.refresh_loop())

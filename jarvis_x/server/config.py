@@ -68,7 +68,7 @@ def fake_mode() -> bool:
 
 
 DEFAULT_SETTINGS = {
-    "humor": 40,
+    "humor": 35,
     "effort": "auto",
     "interrupt": True,
     "sound": True,

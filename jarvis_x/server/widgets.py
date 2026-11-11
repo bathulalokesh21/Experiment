@@ -269,5 +269,29 @@ async def refresh_loop() -> None:
         await asyncio.sleep(REFRESH_SECONDS)
 
 
+async def fake_fetch(url: str) -> str:
+    """Canned responses for JARVIS_FAKE=1 (tests and offline demos)."""
+    import json
+    if "geocoding" in url:
+        return json.dumps({"results": [{"name": "Shillong", "latitude": 25.57, "longitude": 91.88}]})
+    if "open-meteo" in url:
+        hours = [f"2026-01-01T{h:02d}:00" for h in range(24)] + [f"2026-01-02T{h:02d}:00" for h in range(24)]
+        return json.dumps({"current": {"time": "2026-01-01T09:00", "temperature_2m": 17.4, "apparent_temperature": 16.2,
+                                       "relative_humidity_2m": 71, "weather_code": 2, "wind_speed_10m": 9.3, "is_day": 1},
+                           "hourly": {"time": hours, "temperature_2m": [14 + 6 * abs(((i % 24) - 3) / 12 - 1) for i in range(48)],
+                                      "precipitation_probability": [70 if 15 <= i % 24 <= 17 else 10 for i in range(48)]},
+                           "daily": {"temperature_2m_max": [21.2, 20.1], "temperature_2m_min": [11.3, 10.8]}})
+    if "rss" in url or "feed" in url:
+        topic = "Demo"
+        for key in ("business", "technology", "India", "top"):
+            if key.lower() in url.lower():
+                topic = key.title()
+        items = "".join(f"<item><title>{topic} demo headline {i} - Demo Times</title><link>https://example.com/{topic}/{i}</link>"
+                        f"<pubDate>Thu, 01 Jan 2026 0{i}:00:00 GMT</pubDate><description>Summary {i}</description></item>"
+                        for i in range(1, 6))
+        return f"<rss><channel>{items}</channel></rss>"
+    raise ValueError("no demo data for " + url)
+
+
 def reset() -> None:
     _state.update(weather=None, news={}, seen_links={})

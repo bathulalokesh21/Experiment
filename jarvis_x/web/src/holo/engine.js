@@ -128,7 +128,7 @@ export class Hologram {
 
     this.composer = new EffectComposer(this.renderer);
     this.composer.addPass(new RenderPass(this.scene, this.camera));
-    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.85, 0.7, 0.12);
+    this.bloom = new UnrealBloomPass(new THREE.Vector2(256, 256), 0.5, 0.45, 0.22);
     this.composer.addPass(this.bloom);
     this.composer.addPass(new OutputPass());
     this.canvas.addEventListener('webglcontextlost', (e) => { e.preventDefault(); this.paused = true; });
@@ -222,7 +222,7 @@ export class Hologram {
       u.uMorph.value.set(w[0], w[1], w[2]);
       u.uSpin.value.set(this.spin[0], this.spin[1]);
       this.camera.position.z = 4.2 / this.zoom;
-      this.bloom.strength = 0.75 + this.stateW[2] * f.out.level * 0.6 + this.stateW[1] * 0.2 + this.stateW[3] * 0.4;
+      this.bloom.strength = 0.5 + this.stateW[2] * f.out.level * 0.22 + this.stateW[1] * 0.12 + this.stateW[3] * 0.3;
       this.core.visible = w[1] > 0.02; this.field.visible = w[1] > 0.02; this.filaments.visible = w[0] > 0.02;
       this.shells.forEach((s) => { s.visible = w[2] > 0.02; });
       this.composer.render();

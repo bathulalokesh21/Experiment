@@ -66,14 +66,14 @@ export function buildParticles(count, seed = 7) {
     // --- ROBIN
     let kr, pr;
     const pick2 = r();
-    if (pick2 < 0.42) {
+    if (pick2 < 0.68) {
       kr = 0;
       const shell = SHELLS[Math.floor(r() * SHELLS.length)];
       const [a, b] = shell.edges[Math.floor(r() * shell.edges.length)];
       const t = r() < 0.25 ? Math.round(r()) : r();   // extra light at the vertices
       pr = [0, 1, 2].map((k) => (a[k] + (b[k] - a[k]) * t) * shell.scale + (r() - 0.5) * 0.006);
       rand[3] = shell.shell;
-    } else if (pick2 < 0.56) { kr = 1; pr = [Math.floor(r() * 3) / 3 * Math.PI * 2, r(), 0.86 + Math.floor(r() * 2) * 0.12]; }
+    } else if (pick2 < 0.86) { kr = 1; pr = [Math.floor(r() * 3) / 3 * Math.PI * 2, r(), 0.86 + Math.floor(r() * 2) * 0.12]; }
     else { kr = 2; pr = [r() * Math.PI * 2, r(), 0.5 + r() * 0.75]; }
     aJ.set(pj, i * 3); aF.set(pf, i * 3); aR.set(pr, i * 3);
     aRand.set(rand, i * 4); aKind.set([big, kf, kr], i * 3);
