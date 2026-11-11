@@ -1,0 +1,196 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<title>JARVIS X</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<link rel="icon" href="/favicon.ico">
+<link rel="stylesheet" href="/css/main.css">
+<script type="importmap">
+{"imports": {"three": "/vendor/three/three.module.js", "three/addons/": "/vendor/three/addons/"}}
+</script>
+</head>
+<body data-persona="jarvis" data-state="idle">
+<canvas id="ambient" aria-hidden="true"></canvas>
+
+<div id="app">
+  <header id="top">
+    <section class="card" id="card-brand" data-expand="brand" tabindex="0">
+      <div class="brand-row"><span class="brand">JARVIS <b>X</b></span><span class="pill" id="brand-persona">JARVIS</span></div>
+      <div class="clock" id="clock">--:--</div>
+      <div class="sub" id="date">&nbsp;</div>
+    </section>
+    <section class="card" id="card-weather" data-expand="weather" tabindex="0">
+      <div class="card-head"><span class="label">Weather</span><span class="sub" id="weather-updated"></span>
+        <button class="icon-btn" id="weather-refresh" title="Refresh weather" aria-label="Refresh weather">⟳</button></div>
+      <div class="weather-main"><span class="big" id="weather-temp">--°</span>
+        <div><div id="weather-desc">Loading…</div><div class="sub" id="weather-meta">&nbsp;</div></div>
+        <canvas id="weather-spark" width="150" height="40" title="Next 24 hours"></canvas></div>
+      <div class="sub" id="weather-rain">&nbsp;</div>
+    </section>
+    <section class="card" id="card-news" data-expand="news">
+      <div class="card-head"><span class="label">Headlines</span><span class="sub" id="news-updated"></span>
+        <button class="icon-btn" id="news-refresh" title="Refresh headlines" aria-label="Refresh headlines">⟳</button></div>
+      <ul id="news-list" class="news-list"><li class="sub">Loading…</li></ul>
+    </section>
+    <section class="card" id="card-power" data-expand="power" tabindex="0">
+      <div class="card-head"><span class="label">Power</span><span class="sub" id="power-reset"></span></div>
+      <div class="power-row"><div class="meter"><div class="meter-fill" id="power-fill"></div>
+        <i style="left:25%"></i><i style="left:50%"></i><i style="left:85%"></i><i style="left:90%"></i></div>
+        <span class="big small" id="power-pct">—</span></div>
+      <div class="sub" id="power-status">Waiting for the first answer…</div>
+    </section>
+  </header>
+
+  <main id="main">
+    <aside class="col" id="left">
+      <section class="panel" id="panel-crew"><h3>Crew</h3><div id="crew-list" class="crew-list"></div></section>
+
+      <section class="panel" id="panel-quick"><h3>Quick asks</h3>
+        <div class="grid2" id="quick-list">
+          <button data-quick="brief">Brief my day</button><button data-quick="headlines">Headlines</button>
+          <button data-quick="weather">Weather</button><button data-quick="guesstimate">Guesstimate</button>
+          <button data-quick="debate">Crew debate</button><button data-quick="roast">Roast</button>
+          <button data-quick="party">House party</button><button data-quick="clean">Clean slate</button>
+          <button data-quick="recap">How was my day?</button><button data-quick="screen">What's on my screen?</button>
+          <button data-quick="clipboard">Summarise clipboard</button><button data-quick="sketch">Sketch to life</button>
+        </div></section>
+
+      <section class="panel" id="panel-style"><h3>Style</h3>
+        <div class="row"><span class="label">Effort</span>
+          <div class="seg" id="effort-seg"><button data-effort="auto">Auto</button><button data-effort="fast">Fast</button>
+            <button data-effort="med">Med</button><button data-effort="deep">Deep</button></div></div>
+        <div class="sub" id="effort-explain">&nbsp;</div>
+        <div class="row"><span class="label">Humor</span><input type="range" id="humor" min="0" max="100" step="1">
+          <span class="pill" id="humor-label">Dry wit</span></div>
+        <label class="check"><input type="checkbox" id="interrupt-toggle"> Let me interrupt mid-answer</label>
+        <label class="check"><input type="checkbox" id="sound-toggle"> Interface sounds</label>
+        <label class="check"><input type="checkbox" id="proactive-toggle"> Proactive mode</label>
+        <label class="check"><input type="checkbox" id="routing-toggle"> Smart routing (ROBIN may offer JARVIS)</label>
+        <div class="row"><span class="label">Quiet hours</span><input type="time" id="quiet-start"><span>–</span><input type="time" id="quiet-end"></div>
+      </section>
+
+      <section class="panel" id="panel-drill"><h3>Interview drill</h3>
+        <div class="grid2"><button data-drill="cv">CV grill</button><button data-drill="guesstimate">Guesstimate</button>
+          <button data-drill="case">Case</button><button data-drill="hr">HR</button></div>
+        <button id="drill-end" class="wide ghost">End drill</button>
+        <div class="sub" id="drill-status">No drill running.</div></section>
+
+      <section class="panel" id="panel-routines"><h3>Routines</h3>
+        <div id="routine-list" class="list"></div>
+        <div class="sub">Say “when I say <i>movie time</i>: …” to make your own.</div></section>
+
+      <section class="panel" id="panel-guitar"><h3>Guitar</h3>
+        <div class="row"><span id="chord-name" class="strong">—</span><span class="mono" id="chord-frets"></span></div>
+        <div class="sub" id="chord-tip">&nbsp;</div>
+        <div class="grid2"><button id="tuner-open">Tuner</button><button id="metro-toggle">Metronome</button></div>
+        <div class="row"><span class="label">BPM</span><input type="range" id="metro-bpm" min="40" max="208" value="80">
+          <span class="pill" id="metro-bpm-label">80</span><span id="metro-dot" class="dot"></span></div>
+        <div class="row"><button id="practice-toggle" class="grow">Start practice</button><span class="mono" id="practice-time">00:00</span></div>
+        <div class="sub" id="guitar-stats">&nbsp;</div></section>
+
+      <section class="panel" id="panel-studio"><h3>Studio &amp; learning</h3>
+        <div class="row"><span class="label">Comic</span><span id="comic-summary" class="sub grow">—</span><button id="comic-open" class="mini">Open</button></div>
+        <div class="row"><span class="label">Cards</span><span id="cards-summary" class="sub grow">—</span><button id="cards-quiz" class="mini">Quiz me</button></div>
+        <div class="row"><span class="label">Journal</span><span id="journal-summary" class="sub grow">—</span><button id="journal-add" class="mini">Add</button></div>
+        <div class="sub" id="learn-today">&nbsp;</div></section>
+
+      <section class="panel" id="panel-plugins"><h3>Abilities (plugins)</h3>
+        <div id="plugin-list" class="list"><div class="sub">None yet. Say “I wish you could …”.</div></div></section>
+    </aside>
+
+    <section id="centre">
+      <div id="holo-wrap">
+        <canvas id="holo"></canvas>
+        <div id="holo-chips" aria-live="polite"></div>
+        <div id="persona-tag"><span id="persona-name">JARVIS</span><span id="persona-sub" class="sub">Opus · the golden mind</span></div>
+        <div id="state-tag" class="pill">idle</div>
+        <div id="gesture-hud" hidden><svg viewBox="0 0 44 44"><circle cx="22" cy="22" r="19" class="ring-bg"/><circle cx="22" cy="22" r="19" class="ring" id="hud-ring"/></svg>
+          <span id="hud-pose">✋</span><span id="hud-label" class="sub">open palm</span></div>
+        <button id="orb-btn" class="icon-btn" title="Pop out the voice orb (always on top)">⧉</button>
+      </div>
+      <div id="zone-cards"><div id="approval-zone"></div><div id="proactive-zone"></div></div>
+      <div id="captions" aria-live="polite"><div id="caption-speaker"></div><div id="caption-text"></div></div>
+      <form id="talkbar" autocomplete="off">
+        <button type="button" id="mic-btn" title="Talk (Space)" aria-label="Talk"><span class="mic-ring" id="mic-ring"></span><span class="mic-icon">🎙</span></button>
+        <input id="talk-input" type="text" placeholder="Say “Jarvis…”, or type here.  Ctrl+K for commands" aria-label="Message">
+        <button type="submit" id="send-btn">Send</button>
+        <button type="button" id="stop-btn" class="ghost" title="Stop (Esc)">Stop</button>
+      </form>
+    </section>
+
+    <aside class="col" id="right">
+      <section class="panel" id="panel-memory"><h3>Memory <button class="mini" id="memory-open">Open</button></h3>
+        <div class="stats"><div><b id="mem-facts">0</b><span>facts</span></div><div><b id="mem-files">0</b><span>files</span></div>
+          <div><b id="mem-days">0</b><span>days of talk</span></div></div>
+        <div class="sub" id="mem-last">Drop a PDF, doc or image anywhere to add it.</div></section>
+
+      <section class="panel" id="panel-focus"><h3>Focus timer</h3>
+        <div class="focus-time" id="focus-time">25:00</div>
+        <div class="seg" id="focus-seg"><button data-focus="25">25</button><button data-focus="50">50</button><button data-focus="90">90</button></div>
+        <div class="grid2"><button id="focus-start">Start</button><button id="focus-reset" class="ghost">Reset</button></div></section>
+
+      <section class="panel" id="panel-reminders"><h3>Reminders &amp; tasks</h3>
+        <div id="reminder-list" class="list"></div>
+        <div id="task-list" class="list"></div>
+        <form id="task-form" class="row"><input id="task-input" placeholder="Add a task, or “remind me at 6 to…”" aria-label="New task or reminder"><button class="mini">Add</button></form></section>
+
+      <section class="panel" id="panel-vision"><h3>Vision</h3>
+        <div class="video-wrap"><video id="cam" playsinline muted></video><canvas id="cam-overlay"></canvas>
+          <div id="cam-off" class="sub">Camera is off</div></div>
+        <div class="grid2"><button id="cam-toggle">Turn on camera</button><button id="cam-calibrate" class="ghost">Calibrate</button></div>
+        <label class="check"><input type="checkbox" id="air-toggle"> Air mouse (point to move, pinch to click)</label>
+        <div class="row"><span class="label">Sensitivity</span><input type="range" id="sens" min="0.6" max="1.6" step="0.05" value="1"></div>
+        <div class="sub" id="cam-status">Hands and faces are processed on this laptop only.</div>
+        <div class="tips" id="gesture-tips">
+          <span>✌️ flick · switch</span><span>🖐️ hold · stop</span><span>✊ hold · mute</span><span>☝️ hold · listen</span>
+          <span>👍 approve</span><span>👎 cancel</span><span>🤏 move · rotate</span><span>🤏🤏 · zoom</span>
+          <span>🤟 swipe ↕ · volume</span><span>👋 wake</span><span>🤘 party</span><span>👌 confirm</span>
+        </div>
+        <div class="sub" id="people-count">People in view: –</div></section>
+
+      <section class="panel" id="panel-mic"><h3>Microphone</h3>
+        <div class="meter thin"><div class="meter-fill" id="mic-level"></div></div>
+        <div class="row"><span class="pill" id="mic-state">off</span><span class="sub grow" id="mic-heard">&nbsp;</span>
+          <button id="mic-mute" class="mini">Mute</button></div></section>
+
+      <section class="panel" id="panel-home"><h3>Home</h3>
+        <div id="home-empty" class="sub">No light added yet. In cmd: <code>python scripts\devices_scan.py</code></div>
+        <div id="home-controls" hidden>
+          <div class="row"><span class="strong grow" id="light-name">Light</span><button id="light-toggle" class="mini">On</button></div>
+          <div class="row"><span class="label">Brightness</span><input type="range" id="light-bright" min="1" max="100" value="100"></div>
+          <div class="row"><span class="label">Warm–cool</span><input type="range" id="light-kelvin" min="2700" max="6500" step="100" value="4000"></div>
+          <div class="chips" id="light-scenes"></div></div></section>
+
+      <section class="panel" id="panel-expenses"><h3>Expenses</h3>
+        <div class="row"><span class="big small" id="exp-total">₹0</span><span class="sub grow" id="exp-today">this month</span></div>
+        <div id="exp-bars" class="bars"></div>
+        <form id="exp-form" class="row"><input id="exp-input" placeholder="200 on lunch" aria-label="Log an expense"><button class="mini">Log</button></form></section>
+
+      <section class="panel" id="panel-companion"><h3>Phone companion</h3>
+        <label class="check"><input type="checkbox" id="companion-toggle"> Serve a phone page on my Wi-Fi</label>
+        <div class="sub" id="companion-info">Off.</div></section>
+
+      <section class="panel" id="panel-convo"><h3>Recent conversation <button class="mini" id="history-open">Search</button></h3>
+        <div id="convo" class="convo"></div></section>
+    </aside>
+  </main>
+</div>
+
+<div id="boot"><div class="boot-inner"><div class="boot-title">JARVIS <b>X</b></div><ul id="boot-lines"></ul>
+  <button id="boot-start">Click or press any key to wake</button></div></div>
+<div id="shutdown" hidden><div class="boot-inner"><div class="boot-title">Clean slate</div><div class="sub" id="shutdown-msg">All systems resting.</div>
+  <button id="wake-btn">Wake up</button></div></div>
+<div id="ambient-screen" hidden><div id="ambient-clock">--:--</div><div id="ambient-weather" class="sub"></div><div class="sub">Say a name, wave, or press any key</div></div>
+
+<div id="palette" hidden><div class="palette-box"><input id="palette-input" placeholder="Type a command…" aria-label="Command palette"><ul id="palette-list"></ul></div></div>
+<div id="overlay" hidden><div class="overlay-box"><div class="overlay-head"><h2 id="overlay-title"></h2><button id="overlay-close" class="icon-btn" aria-label="Close">✕</button></div><div id="overlay-body"></div></div></div>
+<div id="debug" hidden></div>
+<div id="toasts" aria-live="polite"></div>
+<div id="air-cursor" hidden></div>
+<div id="dropzone" hidden><div>Drop it. I'll read it.</div></div>
+<div id="party-layer" aria-hidden="true"></div>
+
+<script type="module" src="/src/main.js"></script>
+</body>
+</html>
