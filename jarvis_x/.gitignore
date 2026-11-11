@@ -1,0 +1,9 @@
+# runtime data never goes into git (and updates never touch it)
+data/*
+!data/.gitkeep
+.env
+venv/
+__pycache__/
+*.pyc
+.pytest_cache/
+test-results/
