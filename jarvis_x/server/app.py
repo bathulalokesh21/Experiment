@@ -518,7 +518,7 @@ async def run_routine(request: Request):
     routine = routines.match(str(body.get("utterance", ""))) if body.get("utterance") else routines.find(str(body.get("name", "")))
     if routine is None:
         return ok(matched=False)
-    return ok(matched=True, **(await routines.run(routine["name"])))
+    return ok(matched=True, **(await routines.run(routine["name"], publish=False)))
 
 
 @app.get("/api/brief")

@@ -91,7 +91,7 @@ def match(utterance: str) -> dict | None:
     return None
 
 
-async def run(name: str) -> dict:
+async def run(name: str, publish: bool = True) -> dict:
     """Server steps (tools) run here; say/ask/ui steps are handed to the dashboard in order."""
     from .tools import registry
     routine = find(name)
@@ -104,6 +104,7 @@ async def run(name: str) -> dict:
             notes.append(f"{step['tool']}: {result}")
         else:
             client_steps.append(step)
-    bus.publish("routine", name=routine["name"], steps=client_steps, notes=notes)
+    if publish:
+        bus.publish("routine", name=routine["name"], steps=client_steps, notes=notes)
     return {"ok": True, "name": routine["name"], "steps": client_steps, "notes": notes,
             "message": f"Running '{routine['name']}'. " + " ".join(notes)}

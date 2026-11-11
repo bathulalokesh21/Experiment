@@ -294,4 +294,8 @@ on('srv:reminder', async ({ item }) => {
   if (!state.busy && !state.speaking) await sayLocal(`Reminder, ${persona().address}: ${item.text}.${late}`);
   else addLine(state.persona, `Reminder: ${item.text}`);
 });
-on('srv:routine', ({ name, steps }) => { if (!state.busy) runSteps(steps, name); });
+on('srv:routine', ({ name, steps }) => {
+  // the crew started a routine mid-answer: run the dashboard steps once it has finished speaking
+  if (!state.busy && !state.speaking) return runSteps(steps, name);
+  const off = on('answer', () => { off(); runSteps(steps, name); });
+});
