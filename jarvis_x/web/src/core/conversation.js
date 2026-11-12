@@ -113,6 +113,7 @@ export async function sayLocal(text, id = state.persona, { log = true, cache = f
   if (!text) return;
   if (log) { addLine(id, text); post('/api/log', { who: id, persona: id, text }); }
   const my = turn;
+  state.speaking = true;   // from the moment a line is queued, not only once its audio starts
   voice.say(id, text, { cache });
   await settle(my);
 }

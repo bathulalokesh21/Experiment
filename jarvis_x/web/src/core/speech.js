@@ -75,10 +75,11 @@ export function hear(transcript, isFinal = true) {
     if (speech.capturing || parseWake(text)) { emit('speech:interim', text); if (!state.speaking && !state.busy) setMode('listen'); }
     return;
   }
-  if (isEcho(text, voice.spoken) && Date.now() - (state.lastSpokeAt || 0) < 2500) return;
-
   // 2. a name anywhere switches assistant and passes on the rest of the sentence
   const wake = parseWake(text);
+  // the tail of its own voice can arrive just after it stops; a name it did not say itself is never an echo
+  const saidName = wake && new RegExp(`\\b${wake.persona}\\b`, 'i').test(voice.spoken);
+  if ((!wake || saidName) && isEcho(text, voice.spoken) && Date.now() - (state.lastSpokeAt || 0) < 2500) return;
   if (wake) {
     captureUntil = 0;
     emit('speech:wake', wake);
