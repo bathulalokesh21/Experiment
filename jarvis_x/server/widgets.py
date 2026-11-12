@@ -240,7 +240,8 @@ async def news(topic: str = "top", max_age: float = REFRESH_SECONDS) -> dict:
     return await refresh_news(topic)
 
 
-async def headlines_mix(topics: list[str] | None = None, per_topic: int = 4, force: bool = False) -> dict:
+async def headlines_mix(topics: list[str] | None = None, per_topic: int = 4, force: bool = False,
+                        publish: bool = True) -> dict:
     """The headlines card: business + technology + India by default, interleaved."""
     topics = topics or config.settings()["news_topics"]
     results = await asyncio.gather(*[(refresh_news(t) if force else news(t)) for t in topics])
@@ -254,7 +255,8 @@ async def headlines_mix(topics: list[str] | None = None, per_topic: int = 4, for
             errors.append(res["error"])
     out = {"ok": bool(items), "topics": topics, "items": items, "updated": time.time(),
            "error": errors[0] if errors and not items else ""}
-    bus.publish("news", news=out)
+    if publish:
+        bus.publish("news", news=out)
     return out
 
 

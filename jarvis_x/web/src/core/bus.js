@@ -13,7 +13,7 @@ export function emit(type, data) {
 export const state = {
   personas: [], persona: 'jarvis', settings: {}, mode: 'idle', // idle | notice | listen | think | speak
   speaking: false, busy: false, muted: false, drill: null, party: false, ambient: false, asleep: false,
-  people: 0, approvals: [], timings: {}, cameraOn: false, booted: false, fake: false,
+  people: 0, approvals: [], currentReply: '', timings: {}, cameraOn: false, booted: false, fake: false,
 };
 export function setMode(mode) {
   if (state.mode === mode) return;

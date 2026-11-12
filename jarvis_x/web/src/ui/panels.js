@@ -197,7 +197,9 @@ function initTasks() {
     const input = $('#task-input'); const text = input.value.trim();
     if (!text) return;
     const reminder = /^remind( me)?\b/i.test(text) || /\b(in \d+ (min|hour)|at \d|tomorrow|tonight|every )/i.test(text);
-    const res = reminder ? await post('/api/reminders', { text: text.replace(/^remind( me)?( to)?\s*/i, ''), when: text }) : await post('/api/tasks', { text });
+    // "remind me tomorrow at 9 to call Mom" -> reminder text "call Mom", time parsed from the whole sentence
+    const what = (text.match(/\bto\s+(.+)$/i) || [])[1] || text.replace(/^remind( me)?\b\s*/i, '');
+    const res = reminder ? await post('/api/reminders', { text: what, when: text }) : await post('/api/tasks', { text });
     if (res.ok) { input.value = ''; loadTasks(); } else toast(res.message);
   });
 }

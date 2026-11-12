@@ -39,13 +39,21 @@ export async function cameraOn() {
   try {
     const vision = await import('/vendor/mediapipe/vision_bundle.mjs');
     const files = await vision.FilesetResolver.forVisionTasks('/vendor/mediapipe/wasm');
-    try {
-      hands = await vision.HandLandmarker.createFromOptions(files, { baseOptions: { modelAssetPath: '/models/hand_landmarker.task', delegate: 'GPU' }, runningMode: 'VIDEO', numHands: 2 });
-    } catch (err) { status(`Step 2 failed: the hand model did not load (${err.message || err}). The preview still works.`); }
-    try {
-      faces = await vision.FaceDetector.createFromOptions(files, { baseOptions: { modelAssetPath: '/models/blaze_face_short_range.tflite', delegate: 'GPU' }, runningMode: 'VIDEO' });
-    } catch (err) { status(`Step 3 failed: the face detector did not load (${err.message || err}). Gestures still work.`); }
+    // try the GPU first, then fall back to the CPU (some drivers refuse the GPU delegate)
+    const create = async (Task, model, extra) => {
+      let last = null;
+      for (const delegate of ['GPU', 'CPU']) {
+        try { return await Task.createFromOptions(files, { baseOptions: { modelAssetPath: model, delegate }, runningMode: 'VIDEO', ...extra }); }
+        catch (err) { last = err; }
+      }
+      throw last;
+    };
+    try { hands = await create(vision.HandLandmarker, '/models/hand_landmarker.task', { numHands: 2 }); }
+    catch (err) { status(`Step 2 failed: the hand model did not load (${err.message || err}). The preview still works.`); }
+    try { faces = await create(vision.FaceDetector, '/models/blaze_face_short_range.tflite', {}); }
+    catch (err) { status(`Step 3 failed: the face detector did not load (${err.message || err}). Gestures still work.`); }
     if (hands && faces) status('Vision ready. Hands and faces are processed on this laptop only.');
+    if (hands && !(state.settings.calibration && state.settings.calibration.size)) toast('First time? Press Calibrate so gestures fit your hand and distance.');
   } catch (err) {
     status(`Step 2 failed: MediaPipe could not start (${err.message || err}). The camera preview still works.`);
   }

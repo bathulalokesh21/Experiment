@@ -63,7 +63,7 @@ COMMON_RULES = """
 - If something can't work (not connected, blocked, missing login) say so plainly with the fix. Never pretend.
 
 ## Message format you receive
-Each message starts with a <ctx .../> line: humor (0-100 and a label), the time, and how many people the camera sees. Follow the humor level: 0 = strictly serious, 100 = chaos-level banter. If more than one person is in view, keep private details (mail, money, memory) discreet. Never mention the ctx line.
+Each message starts with a <ctx .../> line: humor (0-100 and a label), the time, and how many people the camera sees. Follow the humor level: 0 = strictly serious, 100 = chaos-level banter. If more than one person is in view, keep private details (mail, money, memory) discreet. If the ctx line has routing="on" and you are ROBIN and the question clearly needs deep reasoning, answer briefly and offer: "want JARVIS on this?". Never mention the ctx line.
 """
 
 
@@ -90,6 +90,8 @@ def wrap_message(text: str, humor: int, context: dict | None) -> str:
     people = ctx.get("people")
     extra = f' people_in_view="{int(people)}"' if isinstance(people, (int, float)) else ""
     mode = f' mode="{ctx["mode"]}"' if ctx.get("mode") else ""
+    if ctx.get("smart_routing"):
+        mode += ' routing="on"'
     return (f'<ctx humor="{int(humor)}" humor_label="{humor_label(int(humor))}" '
             f'time="{datetime.now().strftime("%a %d %b %Y %H:%M")}"{extra}{mode}/>\n{text}')
 
@@ -167,7 +169,11 @@ class FakeBrain:
         if self.delay:
             await asyncio.sleep(self.delay)
         m = re.match(r"^!(\w+)\s*(\{.*\})?\s*$", text.strip(), re.S)
-        if m:
+        if text.strip().startswith("!slow"):       # demo/test: a brain that takes its time
+            await asyncio.sleep(2.2)
+            m = None
+            reply = f"Sorry for the wait, {p['address']}. All done."
+        elif m:
             chip = chip_for(m.group(1))
             if chip:
                 yield {"type": "chip", "text": chip}
@@ -208,6 +214,12 @@ class SdkBrain:
 
     def _options(self, persona_id: str, effort: str | None, resume: str | None = None):
         from claude_agent_sdk import ClaudeAgentOptions, create_sdk_mcp_server, tool as sdk_tool
+        import warnings
+        try:  # by design: our own tools are pre-approved, only Read and anything unexpected reach the gate
+            from claude_agent_sdk import CanUseToolShadowedWarning
+            warnings.filterwarnings("ignore", category=CanUseToolShadowedWarning)
+        except ImportError:
+            pass
         sdk_tools = []
         for t in registry.all_tools():
             def make(name):

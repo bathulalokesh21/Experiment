@@ -45,7 +45,7 @@ def main() -> int:
     if "--no-browser" not in sys.argv:
         threading.Timer(1.6, lambda: webbrowser.open(url)).start()
     import uvicorn
-    uvicorn.run("server.app:app", host=config.HOST, port=config.PORT, log_level="warning")
+    uvicorn.run("server.app:app", host=config.HOST, port=config.PORT, log_level="warning", timeout_graceful_shutdown=2)
     return 0
 
 

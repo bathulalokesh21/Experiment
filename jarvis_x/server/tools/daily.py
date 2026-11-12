@@ -41,7 +41,7 @@ async def brief_data() -> dict:
     today = datetime.now().date()
     todays = [r for r in snap["reminders"] if datetime.fromisoformat(r["due"]).date() == today]
     weather = await widgets.weather()
-    news = await widgets.headlines_mix(per_topic=1)
+    news = await widgets.headlines_mix(per_topic=1, publish=False)
     mail = []
     if gmail.connected():
         try:

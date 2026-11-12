@@ -9,15 +9,14 @@ export function detectPitch(buf, sampleRate, { minHz = 65, maxHz = 1000 } = {}) 
   for (let i = 0; i < n; i++) rms += buf[i] * buf[i];
   rms = Math.sqrt(rms / n);
   if (rms < 0.008) return 0;
-  const minLag = Math.floor(sampleRate / maxHz), maxLag = Math.min(n - 2, Math.ceil(sampleRate / minHz));
-  const half = Math.floor(n / 2);
+  const minLag = Math.floor(sampleRate / maxHz), maxLag = Math.min(Math.floor(n / 2), Math.ceil(sampleRate / minHz));
+  const win = n - maxLag - 2;   // as many periods as the buffer allows: more periods = finer pitch
+  // normalised square difference function (McLeod): 1 at a perfect period, independent of loudness
   const corr = new Float32Array(maxLag + 2);
-  let zero = 0;
-  for (let i = 0; i < half; i++) zero += buf[i] * buf[i];
   for (let lag = minLag - 1; lag <= maxLag + 1; lag++) {
-    let sum = 0;
-    for (let i = 0; i < half; i++) sum += buf[i] * buf[i + lag];
-    corr[lag] = sum / (zero || 1);
+    let ac = 0, energy = 0;
+    for (let i = 0; i < win; i++) { const a = buf[i], b = buf[i + lag]; ac += a * b; energy += a * a + b * b; }
+    corr[lag] = energy > 0 ? (2 * ac) / energy : 0;
   }
   // first strong peak after the correlation has dipped (avoids picking an octave too high or low)
   let lag = minLag, dipped = false, best = -1, bestLag = 0;

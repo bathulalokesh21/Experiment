@@ -69,6 +69,7 @@ export function hear(transcript, isFinal = true) {
     emit('speech:barge', verdict);
     if (verdict.stopOnly) { lastInterim = ''; return; }
     if (!isFinal) { lastInterim = text; captureUntil = Date.now() + 6000; return; }
+    captureUntil = Date.now() + 1500;   // what he said while interrupting is the next request
   }
   if (!isFinal) {
     if (speech.capturing || parseWake(text)) { emit('speech:interim', text); if (!state.speaking && !state.busy) setMode('listen'); }

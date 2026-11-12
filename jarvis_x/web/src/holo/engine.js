@@ -76,7 +76,8 @@ export class Hologram {
     const { UnrealBloomPass } = await import('three/addons/postprocessing/UnrealBloomPass.js');
     const { OutputPass } = await import('three/addons/postprocessing/OutputPass.js');
     this.THREE = THREE;
-    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false, alpha: false, powerPreference: 'high-performance' });
+    this.renderer = new THREE.WebGLRenderer({ canvas: this.canvas, antialias: false, alpha: false, powerPreference: 'high-performance',
+      preserveDrawingBuffer: true });   // lets the pop-out orb (and tests) copy the picture
     this.renderer.setClearColor(0x000000, 1);
     this.scene = new THREE.Scene();
     this.camera = new THREE.PerspectiveCamera(42, 1, 0.1, 50);
@@ -233,7 +234,7 @@ export class Hologram {
   }
 
   _autoQuality(dt) {
-    if (this.mode !== 'webgl' || this.frames < 90) return;
+    if (this.mode !== 'webgl' || this.frames < 12) return;
     if (this.frameMs > 21) { this.slowFrames += dt; this.fastFrames = 0; } else if (this.frameMs < 15) { this.fastFrames += dt; this.slowFrames = 0; }
     if (this.slowFrames > 1.5 && this.quality > 0.2) { this.quality = Math.max(0.2, this.quality * 0.75); this._applyQuality(); }
     else if (this.fastFrames > 12 && this.quality < 1) { this.quality = Math.min(1, this.quality * 1.15); this._applyQuality(); }
