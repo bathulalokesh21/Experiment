@@ -53,7 +53,8 @@ code { font-family: var(--mono); font-size: 11px; color: var(--c); }
 .brand-row { display: flex; justify-content: space-between; align-items: center; }
 .brand { font: 600 12px var(--mono); letter-spacing: .3em; } .brand b { color: var(--c); }
 .clock { font: 200 38px var(--sans); letter-spacing: -.02em; line-height: 1.15; font-variant-numeric: tabular-nums; }
-.weather-main { display: flex; align-items: center; gap: 10px; } #weather-spark { margin-left: auto; }
+.weather-main { display: flex; align-items: center; gap: 10px; } #weather-spark { margin-left: auto; flex: none; width: 110px; height: 36px; }
+.weather-main > div { min-width: 0; flex: 1; } #weather-desc, #weather-meta, #weather-rain { white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
 .news-list { list-style: none; margin: 4px 0 0; padding: 0; height: 66px; overflow-y: auto; }
 .news-list li { display: flex; gap: 6px; padding: 2px 0; align-items: baseline; }
 .news-list .t { flex: 1; cursor: pointer; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }

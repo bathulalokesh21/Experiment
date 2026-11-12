@@ -45,8 +45,14 @@ async def test_proactive_rate_limit_once_per_day_quiet_hours_snooze():
     assert proactive.check(DAY.replace(hour=3)) is None
     assert proactive.in_quiet_hours(DAY.replace(hour=6, minute=59), "23:00", "07:00") and not proactive.in_quiet_hours(DAY, "23:00", "07:00")
     # snooze ("not now")
+    config.update_settings({"quiet_start": "00:00", "quiet_end": "00:00"})          # no quiet hours, whatever time the test runs
     proactive.snooze(60)
-    assert proactive.check(datetime.now().replace(hour=15)) is None
+    soon = datetime.now() + timedelta(minutes=10)
+    later = soon + timedelta(hours=2)
+    tasks.create_reminder("team call", "in 30 minutes", now=later)                    # a real trigger that exists at any time of day
+    tasks.create_reminder("mentor call", "in 32 minutes", now=later)
+    assert proactive.check(soon) is None                                             # snoozed
+    assert proactive.check(later)["kind"] == "conflict"                                # ...and it wears off
     # switched off
     store.save("proactive.json", {})
     config.update_settings({"proactive": False})

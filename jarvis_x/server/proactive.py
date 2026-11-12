@@ -29,6 +29,8 @@ def in_quiet_hours(now: datetime, start: str, end: str) -> bool:
         e = datetime.strptime(end, "%H:%M").time()
     except ValueError:
         return False
+    if s == e:
+        return False   # same start and end = no quiet hours
     t = now.time()
     return (s <= t < e) if s < e else (t >= s or t < e)
 

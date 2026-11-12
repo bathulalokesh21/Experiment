@@ -127,8 +127,10 @@ export async function ask(text, opts = {}) {
   if (!opts.raw) {
     const quick = quickCommand(text, { hasApproval: state.approvals.length > 0, speaking: state.speaking });
     if (quick) { emit('command', quick.cmd); return null; }
+    state.busy = true;   // from this moment a request is in flight (prevents double handling)
     const routine = await post('/api/routines/run', { utterance: text });
     if (routine.ok && routine.matched) {
+      state.busy = false;
       addLine('you', text);
       await runSteps(routine.steps || [], routine.name);
       return null;
@@ -186,8 +188,8 @@ export async function ask(text, opts = {}) {
     if (!full) { full = errorMessage; voice.say(id, errorMessage); }
   }
   addLine(id, full);
+  if (!(await settle(my))) return null;   // stays "busy" until the voice has finished, so nothing talks over it
   state.busy = false;
-  if (!(await settle(my))) return null;
   if (checkpoint) { toast(`Power ${checkpoint.value}%`); await sayLocal(checkpoint.text, id); if (my !== turn) return null; }
   setMode('idle');
   speech.followUp();
